@@ -1,5 +1,4 @@
 import torch.nn as nn
-import torch.nn.functional as F
 
 
 class MyCNN(nn.Module):
@@ -13,7 +12,7 @@ class MyCNN(nn.Module):
 
         # -- Conv Blocks --
         # Hierarchical feature learning
-        # Conv Block 1
+        # conv block 1
         self.conv1 = nn.Sequential(
             nn.Conv2d(1, 32, kernel_size=3, padding=1),
             nn.BatchNorm2d(32),
@@ -25,7 +24,7 @@ class MyCNN(nn.Module):
             nn.Dropout(0.05),
         )
 
-        # Conv Block 2
+        # conv block 2
         self.conv2 = nn.Sequential(
             nn.Conv2d(32, 64, kernel_size=3, padding=1),
             nn.BatchNorm2d(64),
@@ -37,7 +36,7 @@ class MyCNN(nn.Module):
             nn.Dropout(0.2),
         )
 
-        # Conv block 3
+        # conv block 3
         self.conv3 = nn.Sequential(
             nn.Conv2d(64, 128, kernel_size=3, padding=1),
             nn.BatchNorm2d(128),
@@ -49,10 +48,10 @@ class MyCNN(nn.Module):
             nn.Dropout(0.25),
         )
 
-        # Adaptive pooling to reduce to (1x1) features per channel
+        # adaptive pooling to reduce to (1x1) features per channel
         self.global_pool = nn.AdaptiveAvgPool2d((1, 1))
 
-        # Fully connected layers
+        # fully connected layers
         self.fc = nn.Sequential(
             nn.Flatten(),
             nn.Linear(128, 64),
