@@ -16,57 +16,66 @@ print(f"Using device: {device}")
 
 model = MyCNN().to(device)
 model.load_state_dict(
-    torch.load("models/fine_tuned_classifier10.pth", map_location=device)
+    torch.load("models/fine_tuned_classifier12.pth", map_location=device)
 )
 model.eval()
 
-
 # ---
-# Load face detector
+# Face detector
 # ---
 face_cascade = cv2.CascadeClassifier(
     cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
 )
 
-# Emotion labels
 class_names = ["happy", "sad", "neutral"]
 
-# Logging setup
-log_path = Path
-
-# ---
-# main loop
-# ---
+# Log
 log_path = Path("predictions_log.csv")
 if not log_path.exists():
     with open(log_path, "w", newline="") as f:
-        writer = csv.writer(f)
-        writer.writerow(["timestamp", "emotion", "confidence"])
+        csv.writer(f).writerow(["timestamp", "emotion", "confidence"])
 
-cap = cv2.VideoCapture(0)  # 0 for default camera
-pause_until = 0
+cap = cv2.VideoCapture(0)
+
+pause_until = 0  # pauses prediction only
+popup_until = 0  # controls popup timer
+popup_img = None  # image shown in popup
 
 while True:
     ret, frame = cap.read()
     if not ret:
         break
 
-    frame = cv2.flip(frame, 1)  # flip horizontally (1 means horizontal)
-
+    frame = cv2.flip(frame, 1)
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    current_time = time.time()
+
+    # --- detect faces always ---
     faces = face_cascade.detectMultiScale(gray, 1.3, 5)
 
-    # pause
-    current_time = time.time()
+    # --- draw rectangles always ---
+    for x, y, w, h in faces:
+        cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+
+    # --- show popup if active ---
+    if current_time < popup_until and popup_img is not None:
+        cv2.imshow("bruh", popup_img)
+    else:
+        if popup_img is not None:
+            cv2.destroyWindow("bruh")
+            popup_img = None
+
+    cv2.imshow("FER Live", frame)
     if current_time < pause_until:
-        cv2.imshow("FER Live", frame)
         if cv2.waitKey(1) & 0xFF == ord("q"):
             break
         continue
 
+    # --- do prediction ---
     for x, y, w, h in faces:
         face = gray[y : y + h, x : x + w]
         face_resized = cv2.resize(face, (48, 48))
+
         face_tensor = (
             torch.tensor(face_resized).unsqueeze(0).unsqueeze(0).float() / 255.0
         )
@@ -80,29 +89,54 @@ while True:
             emotion = class_names[pred.item()]
             confidence = conf.item()
 
-        # Log
         with open(log_path, "a", newline="") as f:
-            writer = csv.writer(f)
-            writer.writerow([datetime.now().isoformat(), emotion, round(confidence, 4)])
+            csv.writer(f).writerow(
+                [datetime.now().isoformat(), emotion, round(confidence, 4)]
+            )
 
-        # Draw
-        cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-        text = f"{emotion} ({confidence * 100:.1f}%)"
+        # Show prob bar
+        prob_text = " | ".join(
+            f"{cls}: {probs[0, i].item() * 100:.1f}%"
+            for i, cls in enumerate(class_names)
+        )
         cv2.putText(
-            frame, text, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2
+            frame,
+            prob_text,
+            (10, frame.shape[0] - 20),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.6,
+            (255, 255, 255),
+            2,
         )
 
+        # Label
+        cv2.putText(
+            frame,
+            f"{emotion} ({confidence * 100:.1f}%)",
+            (x, y - 10),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.8,
+            (255, 255, 255),
+            2,
+        )
+
+        # --- popup logic ---
         if emotion == "sad":
-            # CHANGE LATER
-            # playsound("alert.mp3", block=False)
+            popup_img = cv2.imread("../assets/sad.jpg")
+            playsound("../assets/sad_short.mp3", block=False)
             print("Sad detected!")
+            popup_until = time.time() + 1.5
             pause_until = time.time() + 1.5
+
         elif emotion == "happy":
+            popup_img = cv2.imread("../assets/happy.jpg")
+            playsound("../assets/boom.mp3", block=False)
             print("Happy detected!")
-            # playsound("happy.mp3", block=False)
+            popup_until = time.time() + 1.5
             pause_until = time.time() + 1.5
 
     cv2.imshow("FER Live", frame)
+
     if cv2.waitKey(1) & 0xFF == ord("q"):
         break
 
