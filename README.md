@@ -15,7 +15,7 @@ Developed CNN architecture, originally trained on FER2013, then fine-tuned on a 
 
 - **Own Dataset Creation**
   -	Custom dataset collected manually
-	- Explicit class_to_idx mapping
+  -	Explicit class_to_idx mapping
 
 - **Fine-Tuning**
   - Freeze conv1 & conv2
@@ -24,10 +24,10 @@ Developed CNN architecture, originally trained on FER2013, then fine-tuned on a 
 
 - **Real-Time Demo**
   - Webcam face detection (OpenCV cascade)
-	-	On-the-fly predictions (Torch)
-	-	Overlay of live probabilities for all classes
-	-	Popup window “reaction images”
-	-	Non-blocking sound playback
+  - On-the-fly predictions (Torch)
+  - Overlay of live probabilities for all classes
+  - Popup window “reaction images”
+  - Non-blocking sound playback
   - Logging to CSV with timestamps + confidence scores
  
 <img width="788" height="539" alt="demoscreenshot" src="https://github.com/user-attachments/assets/06235878-ba6c-450f-8a75-6c6794f14e16"/>
